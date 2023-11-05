@@ -27,7 +27,6 @@ func (g *GeocoderClient) FindCoordinates(address string) ([]Place, error) {
 	queryParams := url.Values{}
 	queryParams.Add("q", address)
 	fullURL := fmt.Sprintf("%s?%s", baseURL+endpoint, queryParams.Encode())
-	fmt.Println(fullURL)
 	resp, _ := http.Get(fullURL)
 
 	var places []Place
@@ -37,5 +36,6 @@ func (g *GeocoderClient) FindCoordinates(address string) ([]Place, error) {
 	}
 
 	defer resp.Body.Close()
+	// TO DO: Add proper error response here
 	return places, nil
 }
