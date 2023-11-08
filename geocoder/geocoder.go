@@ -23,7 +23,6 @@ func NewGeocoderClient() *GeocoderClient {
 }
 
 func (g *GeocoderClient) FindCoordinates(address string) ([]Place, error) {
-
 	queryParams := url.Values{}
 	queryParams.Add("q", address)
 	fullURL := fmt.Sprintf("%s?%s", baseURL+endpoint, queryParams.Encode())
