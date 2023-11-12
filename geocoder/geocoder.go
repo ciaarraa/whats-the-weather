@@ -22,6 +22,18 @@ func NewGeocoderClient() *GeocoderClient {
 	return &GeocoderClient{}
 }
 
+func GetPlace(geocodeURL string) ([]Place, error) {
+	resp, _ := http.Get(geocodeURL)
+
+	var places []Place
+
+	if err := json.NewDecoder(resp.Body).Decode(&places); err != nil {
+		fmt.Println("Error decoding JSON:", err)
+	}
+	defer resp.Body.Close()
+	return places, nil
+}
+
 func (g *GeocoderClient) FindCoordinates(address string) ([]Place, error) {
 	queryParams := url.Values{}
 	queryParams.Add("q", address)
