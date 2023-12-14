@@ -46,7 +46,7 @@ func TestGetCoordinates(t *testing.T) {
 	tests := []struct {
 		name               string
 		args               args
-		serverJSONResponse []ServerResponse
+		serverJSONResponse []ServerResponse // TO DO: refactor this to move it into args
 		want               []Place
 		wantErr            error
 	}{
@@ -69,14 +69,53 @@ func TestGetCoordinates(t *testing.T) {
 			want:               []Place{},
 		},
 	}
+
+	geo := GeocodeAPI{baseURL: "testBase.com", endpoint: "/search"}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			serverMock := createServerMock(tt.args, tt.serverJSONResponse)
 			tt.args.url = serverMock.URL
-			got, err := GetPlace(tt.args.url)
+			got, err := geo.getPlace(tt.args.url)
 			assert.Equal(t, tt.wantErr, err)
 			assert.Equal(t, tt.want, got)
 			serverMock.Close()
+		})
+	}
+}
+
+type MockGeocodeAPI struct {
+	places []Place
+	err    error
+}
+
+func (m MockGeocodeAPI) getPlace(address string) ([]Place, error) {
+	return m.places, m.err
+}
+func (m MockGeocodeAPI) fullURL() string { return "testing" }
+
+func TestFindLocation(t *testing.T) {
+	type args struct {
+		mockResponse []Place
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []Place
+		wantErr error
+	}{
+		{
+			name: "It delegates to the geocoder api and returns the response and error",
+			args: args{mockResponse: []Place{{Latitude: "100", Longitude: "100", DisplayName: "Somewhere"}}},
+			want: []Place{{Latitude: "100", Longitude: "100", DisplayName: "Somewhere"}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockGeocodeAPI := MockGeocodeAPI{places: tt.args.mockResponse}
+			geocoderClient := &GeocoderClient{geocoder: mockGeocodeAPI}
+			location, _ := geocoderClient.FindLocation("test address")
+			assert.Equal(t, tt.want, location)
+
 		})
 	}
 }
