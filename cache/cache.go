@@ -11,8 +11,6 @@ import (
 	"github.com/google/uuid"
 )
 
-var db *bitcask.Bitcask
-
 type Cache struct {
 	location string
 	database *bitcask.Bitcask
@@ -31,10 +29,6 @@ func (cache *Cache) close() {
 }
 
 func NewCache() Cache {
-	//db, err := bitcask.Open("tmp/db")
-	//if err != nil {
-	//fmt.Print(err)
-	//}
 	checkCacheFolder()
 	return Cache{location: "tmp/db"}
 }
@@ -69,7 +63,7 @@ func (cache *Cache) get(key string) string {
 	hashKey := getHashKey(key)
 	if cache.database.Has([]byte(hashKey)) {
 		fmt.Print("cache hit!")
-		val, err := db.Get([]byte(hashKey))
+		val, err := cache.database.Get([]byte(hashKey))
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -99,53 +93,12 @@ func getHashKey(key string) string {
 	return fmt.Sprintf("%v", keyHash.Sum64())
 }
 
-func addToCache(db *bitcask.Bitcask, object []byte, key string) {
-	hashKey := getHashKey(key)
-	if db.Has([]byte(hashKey)) {
-		return
-	}
-	id := uuid.New().String()
-	if _, err := os.Stat(".cache/" + id); errors.Is(err, os.ErrNotExist) {
-		_, err := os.Create(".cache/" + id)
-		if err != nil {
-			log.Println(err)
-		}
-		err = os.WriteFile(".cache/"+id, []byte(object), 0644)
-		if err != nil {
-			fmt.Println(err)
-		}
-	}
-
-	err := db.Put([]byte(key), []byte(id))
-	if err != nil {
-		fmt.Print(err)
-	}
-}
-
 func keyInCache(db *bitcask.Bitcask, key string) bool {
 	key = getHashKey(key)
 	if db.Has([]byte(key)) {
 		return true
 	}
 	return false
-}
-
-func getFromCache(db *bitcask.Bitcask, key string) string {
-	hashKey := getHashKey(key)
-	fmt.Print(db.Has([]byte(hashKey)))
-	if db.Has([]byte(key)) {
-		fmt.Print("cache hit!")
-		val, err := db.Get([]byte(key))
-		if err != nil {
-			log.Fatalln(err)
-		}
-		object, err := os.ReadFile(".cache/" + string(val))
-		if err != nil {
-			log.Fatalln(err)
-		}
-		return string(object)
-	}
-	return ""
 }
 
 func Sample() {
