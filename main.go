@@ -5,12 +5,12 @@ package main
 
 import (
 	"whats-the-weather/main/cmd"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	//TO DO: Implement a cache. Read from the file cache.json when the program
-	// starts
+	godotenv.Load()
 	cmd.Execute()
 
-	//TO DO: Write to the cache
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 )
 
 type Geocoder interface {
@@ -32,12 +33,12 @@ type Place struct {
 }
 
 func NewGeoCodeMaps() Geocoder {
-	return &GeocodeAPI{baseURL: "https://geocode.maps.co", endpoint: "/search"}
+	return &GeocodeAPI{baseURL: "https://geocode.maps.co", endpoint: "/search", apiKey: os.Getenv("GEOCODE_API_KEY")}
 }
 
 func NewGeocoderClient(geocoder Geocoder) *GeocoderClient {
 	if geocoder == nil {
-		geocoder = &GeocodeAPI{baseURL: defualtBaseURL, endpoint: searchEndpoint}
+		geocoder = &GeocodeAPI{baseURL: defualtBaseURL, endpoint: searchEndpoint, apiKey: os.Getenv("GEOCODE_API_KEY")}
 	}
 	return &GeocoderClient{geocoder: geocoder}
 }
@@ -49,7 +50,7 @@ func (g *GeocodeAPI) fullURL() string {
 func (g *GeocoderClient) FindCoordinates(address string) ([]Place, error) {
 	queryParams := url.Values{}
 	queryParams.Add("q", address)
-	// To Do: The addition of the api key to the query params in this way is specific
+	// TODO: The addition of the api key to the query params in this way is specific
 	// to the geocoder api. So this should happen inside the getPlace method.
 	queryParams.Add("api_key", "")
 	fullURLtest := fmt.Sprintf("%s?%s", g.geocoder.fullURL(), queryParams.Encode())
