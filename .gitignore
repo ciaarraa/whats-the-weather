@@ -22,3 +22,15 @@ go.work
 
 # Configuration
 *.env
+
+# Database files
+*.cache
+tmp/db
+
+# Database files
+*.cache
+tmp/db
+
+# Editor
+*.vscode
+
