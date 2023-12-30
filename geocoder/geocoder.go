@@ -15,6 +15,7 @@ type Geocoder interface {
 type GeocodeAPI struct {
 	baseURL  string
 	endpoint string
+	apiKey   string
 }
 
 const defualtBaseURL = "https://geocode.maps.co"
@@ -45,18 +46,20 @@ func (g *GeocodeAPI) fullURL() string {
 	return g.baseURL + g.endpoint
 }
 
-func (g *GeocoderClient) FindLocation(address string) ([]Place, error) {
+func (g *GeocoderClient) FindCoordinates(address string) ([]Place, error) {
 	queryParams := url.Values{}
 	queryParams.Add("q", address)
-	fullURL := fmt.Sprintf("%s?%s", g.geocoder.fullURL(), queryParams.Encode())
+	// To Do: The addition of the api key to the query params in this way is specific
+	// to the geocoder api. So this should happen inside the getPlace method.
+	queryParams.Add("api_key", "")
+	fullURLtest := fmt.Sprintf("%s?%s", g.geocoder.fullURL(), queryParams.Encode())
 	var places []Place
-	places, err := g.geocoder.getPlace(fullURL)
+	places, err := g.geocoder.getPlace(fullURLtest)
 	return places, err
 }
 
 func (g *GeocodeAPI) getPlace(geocodeURL string) ([]Place, error) {
 	resp, _ := http.Get(geocodeURL)
-
 	var places []Place
 
 	if err := json.NewDecoder(resp.Body).Decode(&places); err != nil {
@@ -66,19 +69,21 @@ func (g *GeocodeAPI) getPlace(geocodeURL string) ([]Place, error) {
 	return places, nil
 }
 
-func (g *GeocoderClient) FindCoordinates(address string) ([]Place, error) {
-	queryParams := url.Values{}
-	queryParams.Add("q", address)
-	fullURL := fmt.Sprintf("%s?%s", g.geocoder.fullURL(), queryParams.Encode())
-	resp, _ := http.Get(fullURL)
+//func (g *GeocoderClient) FindCoordinates(address string) ([]Place, error) {
+//queryParams := url.Values{}
+//queryParams.Add("q", address)
+//queryParams.Add("api_key", "")
+//fullURL := fmt.Sprintf("%s?%s", g.geocoder.fullURL(), queryParams.Encode())
+//fmt.Printf("%s", g.geocoder.fullURL())
+//resp, _ := http.Get(fullURL)
 
-	var places []Place
+//var places []Place
 
-	if err := json.NewDecoder(resp.Body).Decode(&places); err != nil {
-		fmt.Println("Error decoding JSON:", err)
-	}
+//if err := json.NewDecoder(resp.Body).Decode(&places); err != nil {
+//fmt.Println("Error decoding JSON:", err)
+//}
 
-	defer resp.Body.Close()
-	// TO DO: Add proper error response here
-	return places, nil
-}
+//defer resp.Body.Close()
+//// TO DO: Add proper error response here
+//return places, nil
+//}

@@ -93,7 +93,7 @@ func (m MockGeocodeAPI) getPlace(address string) ([]Place, error) {
 }
 func (m MockGeocodeAPI) fullURL() string { return "testing" }
 
-func TestFindLocation(t *testing.T) {
+func TestFindCoordinates(t *testing.T) {
 	type args struct {
 		mockResponse []Place
 	}
@@ -113,7 +113,7 @@ func TestFindLocation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockGeocodeAPI := MockGeocodeAPI{places: tt.args.mockResponse}
 			geocoderClient := &GeocoderClient{geocoder: mockGeocodeAPI}
-			location, _ := geocoderClient.FindLocation("test address")
+			location, _ := geocoderClient.FindCoordinates("test address")
 			assert.Equal(t, tt.want, location)
 
 		})
