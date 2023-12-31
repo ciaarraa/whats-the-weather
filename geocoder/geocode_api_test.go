@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetCoordinates(t *testing.T) {
-	type args struct {
+func TestGetPlace(t *testing.T) {
+	type server_config struct {
 		url           string
 		httpGetStatus int
 	}
@@ -31,11 +31,11 @@ func TestGetCoordinates(t *testing.T) {
 		BoundingBox []string `json:"boundingbox"`
 	}
 
-	createServerMock := func(args2 args, serverResponseBody []ServerResponse) *httptest.Server {
+	createServerMock := func(server_config_args server_config, serverResponseBody []ServerResponse) *httptest.Server {
 		s := httptest.NewServer(
 			http.HandlerFunc(
 				func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(args2.httpGetStatus)
+					w.WriteHeader(server_config_args.httpGetStatus)
 					jsonResponse, _ := json.Marshal(serverResponseBody)
 					w.Write(jsonResponse)
 				}),
@@ -45,77 +45,39 @@ func TestGetCoordinates(t *testing.T) {
 
 	tests := []struct {
 		name               string
-		args               args
-		serverJSONResponse []ServerResponse // TO DO: refactor this to move it into args
+		args               server_config
+		serverJSONResponse []ServerResponse
 		want               []Place
 		wantErr            error
 	}{
 		{
 			name:               "Returns slice of Places when 200 response",
-			args:               args{httpGetStatus: 200},
+			args:               server_config{httpGetStatus: 200},
 			serverJSONResponse: []ServerResponse{{Lat: "100", Lon: "100", DisplayName: "Somewhere", PlaceID: 123}, {Lat: "200", Lon: "100", DisplayName: "Everest", PlaceID: 789}},
 			want:               []Place{{Latitude: "100", Longitude: "100", DisplayName: "Somewhere"}, {Latitude: "200", Longitude: "100", DisplayName: "Everest"}},
 		},
 		{
 			name:               "Returns empty Place slice if the geocode returns no results ",
-			args:               args{httpGetStatus: 200},
+			args:               server_config{httpGetStatus: 200},
 			serverJSONResponse: []ServerResponse{},
 			want:               []Place{},
 		},
 		{
 			name:               "Returns empty Place slice if geocode returns a 500",
-			args:               args{httpGetStatus: 500},
+			args:               server_config{httpGetStatus: 500},
 			serverJSONResponse: []ServerResponse{},
 			want:               []Place{},
 		},
 	}
 
-	geo := GeocodeAPI{baseURL: "testBase.com", endpoint: "/search"}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			serverMock := createServerMock(tt.args, tt.serverJSONResponse)
-			tt.args.url = serverMock.URL
-			got, err := geo.getPlace(tt.args.url)
+			geo := GeocodeAPI{baseURL: serverMock.URL, endpoint: "/search", apiKey: "testKey"}
+			got, err := geo.getPlace("test_location")
 			assert.Equal(t, tt.wantErr, err)
 			assert.Equal(t, tt.want, got)
 			serverMock.Close()
-		})
-	}
-}
-
-type MockGeocodeAPI struct {
-	places []Place
-	err    error
-}
-
-func (m MockGeocodeAPI) getPlace(address string) ([]Place, error) {
-	return m.places, m.err
-}
-func (m MockGeocodeAPI) fullURL() string { return "testing" }
-
-func TestFindCoordinates(t *testing.T) {
-	type args struct {
-		mockResponse []Place
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    []Place
-		wantErr error
-	}{
-		{
-			name: "It delegates to the geocoder api and returns the response and error",
-			args: args{mockResponse: []Place{{Latitude: "100", Longitude: "100", DisplayName: "Somewhere"}}},
-			want: []Place{{Latitude: "100", Longitude: "100", DisplayName: "Somewhere"}},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockGeocodeAPI := MockGeocodeAPI{places: tt.args.mockResponse}
-			geocoderClient := &GeocoderClient{geocoder: mockGeocodeAPI}
-			location, _ := geocoderClient.FindCoordinates("test address")
-			assert.Equal(t, tt.want, location)
-
 		})
 	}
 }
