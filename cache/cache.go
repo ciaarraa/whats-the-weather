@@ -24,19 +24,28 @@ func (cache *Cache) open() {
 	cache.database = db
 }
 
+func (cache *Cache) Reopen() {
+	err := cache.database.Reopen()
+	if err != nil {
+		fmt.Print(err)
+	}
+}
+
 func (cache *Cache) close() {
+	cache.database.Sync()
 	cache.database.Close()
 }
 
-func NewCache() Cache {
+func NewCache() *Cache {
 	checkCacheFolder()
-	return Cache{location: "tmp/db"}
+	return &Cache{location: "tmp/db"}
 }
 
-func (cache *Cache) add(object []byte, key string) {
+func (cache *Cache) Add(object []byte, key string) {
 	cache.open()
 	hashKey := getHashKey(key)
 	if cache.database.Has([]byte(hashKey)) {
+		cache.close()
 		return
 	}
 	id := uuid.New().String()
@@ -51,18 +60,19 @@ func (cache *Cache) add(object []byte, key string) {
 		}
 	}
 
-	err := cache.database.Put([]byte(key), []byte(id))
+	err := cache.database.Put([]byte(hashKey), []byte(id))
 	if err != nil {
 		fmt.Print(err)
 	}
 	cache.close()
 }
-
-func (cache *Cache) get(key string) string {
+func (cache *Cache) Fold(f func(key []byte) error) {
+	cache.database.Fold(f)
+}
+func (cache *Cache) Get(key string) string {
 	cache.open()
 	hashKey := getHashKey(key)
 	if cache.database.Has([]byte(hashKey)) {
-		fmt.Print("cache hit!")
 		val, err := cache.database.Get([]byte(hashKey))
 		if err != nil {
 			log.Fatalln(err)
@@ -78,7 +88,6 @@ func (cache *Cache) get(key string) string {
 }
 
 func checkCacheFolder() {
-	fmt.Println("Looking for cache")
 	if _, err := os.Stat(".cache"); errors.Is(err, os.ErrNotExist) {
 		err := os.Mkdir(".cache", os.ModePerm)
 		if err != nil {
@@ -95,16 +104,14 @@ func getHashKey(key string) string {
 
 func keyInCache(db *bitcask.Bitcask, key string) bool {
 	key = getHashKey(key)
-	if db.Has([]byte(key)) {
-		return true
-	}
-	return false
+	val := db.Has([]byte(key))
+	return val
 }
 
 func Sample() {
 	cache := NewCache()
-	cache.add([]byte("string"), "122")
-	cache.get("122")
+	cache.Add([]byte("string"), "122")
+	cache.Get("122")
 	cache.close()
 
 }
