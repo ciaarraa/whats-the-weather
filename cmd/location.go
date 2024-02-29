@@ -8,13 +8,14 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
+	"whats-the-weather/main/cache"
 	"whats-the-weather/main/geocoder"
 
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/spf13/cobra"
 	"github.com/zapling/yr.no-golang-client/client"
 	"github.com/zapling/yr.no-golang-client/locationforecast"
-	"github.com/zapling/yr.no-golang-client/utils"
 )
 
 // locationCmd represents the location command
@@ -22,25 +23,45 @@ var locationCmd = &cobra.Command{
 	Use:   "location [string]",
 	Short: "The location you want to see the weather at",
 	Long: ` A location to show the weather at. This will find the first possible match and will tell you the
-	temperature at that location. Example: 
+	temperature at that location. Example:
 	whats-the-weather location Dubai`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		yrClient := client.NewYrClient(http.DefaultClient, "whats-the-weather-local/0.0 ciaratully0@gmail.com ")
 		geoClient := geocoder.NewGeocoderClient(nil)
-		coordsAndPlaces, _ := geoClient.FindCoordinates(args[0])
-		firstMatch := coordsAndPlaces[0]
+		cahce_key := args[0]
+		cache_db := cache.NewCache()
+
+		coords := cache_db.Get(cahce_key)
+		var longitude string
+		var latitude string
+
+		if coords != "" {
+			longLat := strings.Split(coords, ",")
+			longitude = longLat[0]
+			latitude = longLat[1]
+			fmt.Printf("Location: %s\n", args[0])
+		} else {
+			coordsAndPlaces, _ := geoClient.FindCoordinates(args[0])
+			firstMatch := coordsAndPlaces[0]
+			longitude = firstMatch.Longitude
+			latitude = firstMatch.Latitude
+			cache_db.Add([]byte(firstMatch.Latitude+","+firstMatch.Longitude), cahce_key)
+			fmt.Printf("Location: %s\n", firstMatch.DisplayName)
+		}
+
 		// the following two conversions shoulg be handled in te geocode
 		// packaged when the json is being parsed. They should already be
 		// float64 objects but for now, we'll convert them here
-		floatValueLatitude, err := strconv.ParseFloat(firstMatch.Latitude, 64)
-		floatValueLongitude, err := strconv.ParseFloat(firstMatch.Longitude, 64)
+		floatValueLatitude, err := strconv.ParseFloat(latitude, 64)
+		floatValueLongitude, err := strconv.ParseFloat(longitude, 64)
 		if err != nil {
 			fmt.Println("Error:", err)
 			return
 		}
-		// here we want to implemnt a cache. If there is a cached forecast for the longitude and latitude,
-		// find that instead of calling the api again.
+		fmt.Println(floatValueLatitude)
+		fmt.Println(floatValueLongitude)
+		fmt.Print(locationforecast.GetCompact(yrClient, floatValueLatitude, floatValueLongitude))
 		forecast, _, err := locationforecast.GetCompact(yrClient, floatValueLatitude, floatValueLongitude)
 		if err != nil {
 			fmt.Print("An error has occured:")
@@ -48,15 +69,14 @@ var locationCmd = &cobra.Command{
 			return
 		}
 		forecastData := forecast.Properties.Timeseries[0].Data
-		temperatureNow := forecastData.Instant.Details.AirTemperature
-		fmt.Printf("Location: %s\n", firstMatch.DisplayName)
+		//temperatureNow := forecastData.Instant.Details.AirTemperature
 		t := table.NewWriter()
 		t.SetOutputMirror(os.Stdout)
 		t.AppendHeader(table.Row{"", "Next Hour", "Next 6 Hours", "Next 12 Hours"})
 		t.AppendRows([]table.Row{{"Weather Summary", *forecastData.Next1Hours.Summary.SymbolCode, *forecastData.Next6Hours.Summary.SymbolCode, *forecastData.Next12Hours.Summary.SymbolCode}})
 		t.Render()
 
-		fmt.Printf("temperature at %s is : %v degrees celcius right now\n", firstMatch.DisplayName, utils.Float64Value(temperatureNow))
+		//fmt.Printf("temperature at %s is : %v degrees celcius right now\n", firstMatch.DisplayName, utils.Float64Value(temperatureNow))
 	},
 }
 

@@ -107,11 +107,3 @@ func keyInCache(db *bitcask.Bitcask, key string) bool {
 	val := db.Has([]byte(key))
 	return val
 }
-
-func Sample() {
-	cache := NewCache()
-	cache.Add([]byte("string"), "122")
-	cache.Get("122")
-	cache.close()
-
-}
