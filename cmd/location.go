@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/zapling/yr.no-golang-client/client"
 	"github.com/zapling/yr.no-golang-client/locationforecast"
+	"github.com/zapling/yr.no-golang-client/utils"
 )
 
 // locationCmd represents the location command
@@ -30,7 +31,7 @@ var locationCmd = &cobra.Command{
 		yrClient := client.NewYrClient(http.DefaultClient, "whats-the-weather-local/0.0 ciaratully0@gmail.com ")
 		geoClient := geocoder.NewGeocoderClient(nil)
 		cahce_key := args[0]
-		cache_db := cache.NewCache()
+		cache_db := cache.NewCache("tmp/db", ".cache")
 
 		coords := cache_db.Get(cahce_key)
 		var longitude string
@@ -59,9 +60,6 @@ var locationCmd = &cobra.Command{
 			fmt.Println("Error:", err)
 			return
 		}
-		fmt.Println(floatValueLatitude)
-		fmt.Println(floatValueLongitude)
-		fmt.Print(locationforecast.GetCompact(yrClient, floatValueLatitude, floatValueLongitude))
 		forecast, _, err := locationforecast.GetCompact(yrClient, floatValueLatitude, floatValueLongitude)
 		if err != nil {
 			fmt.Print("An error has occured:")
@@ -69,14 +67,14 @@ var locationCmd = &cobra.Command{
 			return
 		}
 		forecastData := forecast.Properties.Timeseries[0].Data
-		//temperatureNow := forecastData.Instant.Details.AirTemperature
+		temperatureNow := forecastData.Instant.Details.AirTemperature
 		t := table.NewWriter()
 		t.SetOutputMirror(os.Stdout)
 		t.AppendHeader(table.Row{"", "Next Hour", "Next 6 Hours", "Next 12 Hours"})
 		t.AppendRows([]table.Row{{"Weather Summary", *forecastData.Next1Hours.Summary.SymbolCode, *forecastData.Next6Hours.Summary.SymbolCode, *forecastData.Next12Hours.Summary.SymbolCode}})
 		t.Render()
 
-		//fmt.Printf("temperature at %s is : %v degrees celcius right now\n", firstMatch.DisplayName, utils.Float64Value(temperatureNow))
+		fmt.Printf("temperature at is %v degrees celcius right now\n",  utils.Float64Value(temperatureNow))
 	},
 }
 

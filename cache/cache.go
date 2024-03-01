@@ -12,8 +12,9 @@ import (
 )
 
 type Cache struct {
-	location string
-	database *bitcask.Bitcask
+	location    string
+	cacheFolder string
+	database    *bitcask.Bitcask
 }
 
 func (cache *Cache) open() {
@@ -36,9 +37,9 @@ func (cache *Cache) close() {
 	cache.database.Close()
 }
 
-func NewCache() *Cache {
-	checkCacheFolder()
-	return &Cache{location: "tmp/db"}
+func NewCache(cacheLocation string, cacheFolder string) *Cache {
+	checkCacheFolder(cacheFolder)
+	return &Cache{location: cacheLocation, cacheFolder: cacheFolder}
 }
 
 func (cache *Cache) Add(object []byte, key string) {
@@ -49,12 +50,13 @@ func (cache *Cache) Add(object []byte, key string) {
 		return
 	}
 	id := uuid.New().String()
-	if _, err := os.Stat(".cache/" + id); errors.Is(err, os.ErrNotExist) {
-		_, err := os.Create(".cache/" + id)
+	if _, err := os.Stat(cache.cacheFolder + "/" + id); errors.Is(err, os.ErrNotExist) {
+		_, err := os.Create(cache.cacheFolder + id)
 		if err != nil {
 			log.Println(err)
 		}
-		err = os.WriteFile(".cache/"+id, []byte(object), 0644)
+		err = os.WriteFile(cache.cacheFolder+"/"+id, []byte(object), 0644)
+		fmt.Println()
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -77,7 +79,7 @@ func (cache *Cache) Get(key string) string {
 		if err != nil {
 			log.Fatalln(err)
 		}
-		object, err := os.ReadFile(".cache/" + string(val))
+		object, err := os.ReadFile(cache.cacheFolder + "/" + string(val))
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -87,9 +89,9 @@ func (cache *Cache) Get(key string) string {
 	return ""
 }
 
-func checkCacheFolder() {
-	if _, err := os.Stat(".cache"); errors.Is(err, os.ErrNotExist) {
-		err := os.Mkdir(".cache", os.ModePerm)
+func checkCacheFolder(cacheFolder string) {
+	if _, err := os.Stat(cacheFolder); errors.Is(err, os.ErrNotExist) {
+		err := os.Mkdir(cacheFolder, os.ModePerm)
 		if err != nil {
 			fmt.Println("An error has occured: ", err)
 		}
