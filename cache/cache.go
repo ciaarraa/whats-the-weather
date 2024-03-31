@@ -6,6 +6,7 @@ import (
 	"hash/fnv"
 	"log"
 	"os"
+	"whats-the-weather/main/cache"
 
 	"git.mills.io/prologic/bitcask"
 	"github.com/google/uuid"
@@ -32,6 +33,9 @@ func (cache *Cache) Reopen() {
 	}
 }
 
+func (cache *Cache) ErrKeyNotFound() error {
+	return 
+}
 func (cache *Cache) close() {
 	cache.database.Sync()
 	cache.database.Close()
@@ -44,6 +48,7 @@ func NewCache(cacheLocation string, cacheFolder string) *Cache {
 
 func (cache *Cache) Add(object []byte, key string) {
 	cache.open()
+	defer cache.close()
 	hashKey := getHashKey(key)
 	if cache.database.Has([]byte(hashKey)) {
 		cache.close()
@@ -51,28 +56,27 @@ func (cache *Cache) Add(object []byte, key string) {
 	}
 	id := uuid.New().String()
 	if _, err := os.Stat(cache.cacheFolder + "/" + id); errors.Is(err, os.ErrNotExist) {
-		_, err := os.Create(cache.cacheFolder + id)
+		_, err := os.Create(cache.cacheFolder + "/" + id)
 		if err != nil {
 			log.Println(err)
 		}
-		err = os.WriteFile(cache.cacheFolder+"/"+id, []byte(object), 0644)
+		err = os.WriteFile(cache.cacheFolder + "/"+ id, []byte(object), 0644)
 		fmt.Println()
 		if err != nil {
 			fmt.Println(err)
 		}
 	}
-
 	err := cache.database.Put([]byte(hashKey), []byte(id))
 	if err != nil {
 		fmt.Print(err)
 	}
-	cache.close()
 }
 func (cache *Cache) Fold(f func(key []byte) error) {
 	cache.database.Fold(f)
 }
 func (cache *Cache) Get(key string) string {
 	cache.open()
+	defer cache.close()
 	hashKey := getHashKey(key)
 	if cache.database.Has([]byte(hashKey)) {
 		val, err := cache.database.Get([]byte(hashKey))
@@ -85,7 +89,6 @@ func (cache *Cache) Get(key string) string {
 		}
 		return string(object)
 	}
-	cache.close()
 	return ""
 }
 
