@@ -6,6 +6,7 @@ import (
 	"hash/fnv"
 	"log"
 	"os"
+	"time"
 
 	"git.mills.io/prologic/bitcask"
 	"github.com/google/uuid"
@@ -67,25 +68,49 @@ func (cache *Cache) Add(object []byte, key string) {
 		fmt.Print(err)
 	}
 }
-func (cache *Cache) Fold(f func(key []byte) error) {
-	cache.database.Fold(f)
-}
-func (cache *Cache) Get(key string) string {
+func (cache *Cache) AddWithTTL(object []byte, key string, ttl time.Duration ) {
 	cache.open()
 	defer cache.close()
 	hashKey := getHashKey(key)
 	if cache.database.Has([]byte(hashKey)) {
-		val, err := cache.database.Get([]byte(hashKey))
-		if err != nil {
-			log.Fatalln(err)
-		}
-		object, err := os.ReadFile(cache.cacheFolder + "/" + string(val))
-		if err != nil {
-			log.Fatalln(err)
-		}
-		return string(object)
+		cache.close()
+		return
 	}
-	return ""
+	id := uuid.New().String()
+	if _, err := os.Stat(cache.cacheFolder + "/" + id); errors.Is(err, os.ErrNotExist) {
+		_, err := os.Create(cache.cacheFolder + "/" + id)
+		if err != nil {
+			log.Println(err)
+		}
+		err = os.WriteFile(cache.cacheFolder + "/"+ id, []byte(object), 0644)
+		fmt.Println()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+	err := cache.database.PutWithTTL([]byte(hashKey), []byte(id), ttl)
+	if err != nil {
+		fmt.Print(err)
+	}
+}
+
+
+func (cache *Cache) Fold(f func(key []byte) error) {
+	cache.database.Fold(f)
+}
+func (cache *Cache) Get(key string) (string, error) {
+	cache.open()
+	defer cache.close()
+	hashKey := getHashKey(key)
+	val, err := cache.database.Get([]byte(hashKey))
+	if err  == bitcask.ErrKeyNotFound || err == bitcask.ErrKeyExpired {
+		return "", err
+	}
+	object, err := os.ReadFile(cache.cacheFolder + "/" + string(val))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return string(object), nil
 }
 
 func checkCacheFolder(cacheFolder string) {

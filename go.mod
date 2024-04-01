@@ -4,6 +4,7 @@ go 1.21.3
 
 require (
 	barista.run v0.0.0-20231013003214-d5b04d179ffa
+	github.com/golang/protobuf v1.5.3
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
 	github.com/spf13/cobra v1.7.0
 	github.com/zapling/yr.no-golang-client v0.0.0-20210309083036-f048e27db764
@@ -19,6 +20,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	golang.org/x/exp v0.0.0-20200228211341-fcea875c7e85 // indirect
+	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
