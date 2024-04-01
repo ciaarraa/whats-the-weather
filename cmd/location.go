@@ -4,11 +4,13 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 	"whats-the-weather/main/cache"
 	"whats-the-weather/main/geocoder"
 
@@ -33,39 +35,57 @@ var locationCmd = &cobra.Command{
 		cahce_key := args[0]
 		cache_db := cache.NewCache("tmp/db", ".cache")
 
-		coords := cache_db.Get(cahce_key)
 		var longitude string
 		var latitude string
 
-		if coords != "" {
-			longLat := strings.Split(coords, ",")
-			longitude = longLat[1]
-			latitude = longLat[0]
-			fmt.Printf("Location: %s\n", args[0])
-		} else {
+		coords, err := cache_db.Get(cahce_key);
+		if err != nil  {
 			coordsAndPlaces, _ := geoClient.FindCoordinates(args[0])
 			firstMatch := coordsAndPlaces[0]
 			longitude = firstMatch.Longitude
 			latitude = firstMatch.Latitude
 			cache_db.Add([]byte(firstMatch.Latitude+","+firstMatch.Longitude), cahce_key)
+			coords = firstMatch.Latitude+","+firstMatch.Longitude
 			fmt.Printf("Location: %s\n", firstMatch.DisplayName)
+
+		} else {
+			longLat := strings.Split(coords, ",")
+			longitude = longLat[1]
+			latitude = longLat[0]
+			fmt.Printf("Location: %s\n", args[0])
 		}
 
-		// the following two conversions shoulg be handled in te geocode
+		// the following two conversions shoulg be handled in the geocode
 		// packaged when the json is being parsed. They should already be
 		// float64 objects but for now, we'll convert them here
-		floatValueLatitude, err := strconv.ParseFloat(latitude, 64)
-		floatValueLongitude, err := strconv.ParseFloat(longitude, 64)
-		if err != nil {
-			fmt.Println("Error:", err)
+		floatValueLatitude, err1 := strconv.ParseFloat(latitude, 64)
+		floatValueLongitude, err2 := strconv.ParseFloat(longitude, 64)
+		if err1 != nil || err2 != nil  {
+			fmt.Println("Error:", err1)
 			return
 		}
-		forecast, _, err := locationforecast.GetCompact(yrClient, floatValueLatitude, floatValueLongitude)
+
+		var forecast *locationforecast.GeoJson
+		
+		cachedForecast, err := cache_db.Get(coords)
 		if err != nil {
-			fmt.Print("An error has occured:")
-			fmt.Println(err)
-			return
+			var resp *http.Response
+			forecast, resp, err = locationforecast.GetCompact(yrClient, floatValueLatitude, floatValueLongitude)
+			if err != nil {
+				fmt.Print("An error has occured:")
+				fmt.Println(err)
+				return
+			}
+			expiresAt := resp.Header.Get("Expires")
+			parsedExpiresAt, _ := time.Parse(time.RFC1123, expiresAt)
+			timeToLive := time.Until(parsedExpiresAt)
+			jsonForecast, _ := json.Marshal(forecast)
+			cache_db.AddWithTTL([]byte(jsonForecast), coords, timeToLive)
+		} else {
+			json.Unmarshal([]byte(cachedForecast), &forecast)
+
 		}
+
 		forecastData := forecast.Properties.Timeseries[0].Data
 		temperatureNow := forecastData.Instant.Details.AirTemperature
 		t := table.NewWriter()
