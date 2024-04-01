@@ -39,8 +39,8 @@ var locationCmd = &cobra.Command{
 
 		if coords != "" {
 			longLat := strings.Split(coords, ",")
-			longitude = longLat[0]
-			latitude = longLat[1]
+			longitude = longLat[1]
+			latitude = longLat[0]
 			fmt.Printf("Location: %s\n", args[0])
 		} else {
 			coordsAndPlaces, _ := geoClient.FindCoordinates(args[0])
