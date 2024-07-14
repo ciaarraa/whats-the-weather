@@ -57,7 +57,7 @@ func (cache *Cache) Add(object []byte, key string) {
 		if err != nil {
 			log.Println(err)
 		}
-		err = os.WriteFile(cache.cacheFolder + "/"+ id, []byte(object), 0644)
+		err = os.WriteFile(cache.cacheFolder+"/"+id, []byte(object), 0644)
 		fmt.Println()
 		if err != nil {
 			fmt.Println(err)
@@ -68,7 +68,7 @@ func (cache *Cache) Add(object []byte, key string) {
 		fmt.Print(err)
 	}
 }
-func (cache *Cache) AddWithTTL(object []byte, key string, ttl time.Duration ) {
+func (cache *Cache) AddWithTTL(object []byte, key string, ttl time.Duration) {
 	cache.open()
 	defer cache.close()
 	hashKey := getHashKey(key)
@@ -82,7 +82,7 @@ func (cache *Cache) AddWithTTL(object []byte, key string, ttl time.Duration ) {
 		if err != nil {
 			log.Println(err)
 		}
-		err = os.WriteFile(cache.cacheFolder + "/"+ id, []byte(object), 0644)
+		err = os.WriteFile(cache.cacheFolder+"/"+id, []byte(object), 0644)
 		fmt.Println()
 		if err != nil {
 			fmt.Println(err)
@@ -94,16 +94,23 @@ func (cache *Cache) AddWithTTL(object []byte, key string, ttl time.Duration ) {
 	}
 }
 
-
-func (cache *Cache) Fold(f func(key []byte) error) {
-	cache.database.Fold(f)
+func (cache *Cache) Clean() {
+	err := os.RemoveAll(cache.cacheFolder)
+	if err != nil {
+		log.Println(err)
+	}
+	err = os.RemoveAll(cache.location)
+	if err != nil {
+		log.Println(err)
+	}
 }
+
 func (cache *Cache) Get(key string) (string, error) {
 	cache.open()
 	defer cache.close()
 	hashKey := getHashKey(key)
 	val, err := cache.database.Get([]byte(hashKey))
-	if err  == bitcask.ErrKeyNotFound || err == bitcask.ErrKeyExpired {
+	if err == bitcask.ErrKeyNotFound || err == bitcask.ErrKeyExpired {
 		return "", err
 	}
 	object, err := os.ReadFile(cache.cacheFolder + "/" + string(val))
