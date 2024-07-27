@@ -4,7 +4,7 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package main
 
 import (
-	"whats-the-weather/main/cmd"
+	"github.com/ciaarraa/whats-the-weather/cmd"
 
 	"github.com/joho/godotenv"
 )

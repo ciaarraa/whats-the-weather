@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"whats-the-weather/main/cache"
-	"whats-the-weather/main/geocoder"
+	"github.com/ciaarraa/whats-the-weather/cache"
+	"github.com/ciaarraa/whats-the-weather/geocoder"
 
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/spf13/cobra"
@@ -66,7 +66,7 @@ var locationCmd = &cobra.Command{
 		}
 
 		var forecast *locationforecast.GeoJson
-		
+
 		cachedForecast, err := cache_db.Get(coords)
 		if err != nil {
 			var resp *http.Response

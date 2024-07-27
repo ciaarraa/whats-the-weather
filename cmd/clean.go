@@ -4,7 +4,7 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"whats-the-weather/main/cache"
+	"github.com/ciaarraa/whats-the-weather/cache"
 
 	"github.com/spf13/cobra"
 )
