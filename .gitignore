@@ -34,3 +34,5 @@ tmp/db
 # Editor
 *.vscode
 
+
+dist/
