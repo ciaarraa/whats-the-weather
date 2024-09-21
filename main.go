@@ -5,7 +5,6 @@ package main
 
 import (
 	"github.com/ciaarraa/whats-the-weather/cmd"
-
 	"github.com/joho/godotenv"
 )
 
