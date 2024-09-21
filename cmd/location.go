@@ -33,19 +33,27 @@ var locationCmd = &cobra.Command{
 		yrClient := client.NewYrClient(http.DefaultClient, "whats-the-weather-local/0.0 ciaratully0@gmail.com ")
 		geoClient := geocoder.NewGeocoderClient(nil)
 		cahce_key := args[0]
-		cache_db := cache.NewCache("tmp/db", ".cache")
+
+		homeDirname, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Println(err)
+		}
+		cachedFilesFolder := homeDirname + "/.whats-the-weather/.cache"
+		dbFolder := homeDirname + "/.whats-the-weather/tmp/db"
+
+		cache_db := cache.NewCache(dbFolder, cachedFilesFolder)
 
 		var longitude string
 		var latitude string
 
-		coords, err := cache_db.Get(cahce_key);
-		if err != nil  {
+		coords, err := cache_db.Get(cahce_key)
+		if err != nil {
 			coordsAndPlaces, _ := geoClient.FindCoordinates(args[0])
 			firstMatch := coordsAndPlaces[0]
 			longitude = firstMatch.Longitude
 			latitude = firstMatch.Latitude
 			cache_db.Add([]byte(firstMatch.Latitude+","+firstMatch.Longitude), cahce_key)
-			coords = firstMatch.Latitude+","+firstMatch.Longitude
+			coords = firstMatch.Latitude + "," + firstMatch.Longitude
 			fmt.Printf("Location: %s\n", firstMatch.DisplayName)
 
 		} else {
@@ -60,7 +68,7 @@ var locationCmd = &cobra.Command{
 		// float64 objects but for now, we'll convert them here
 		floatValueLatitude, err1 := strconv.ParseFloat(latitude, 64)
 		floatValueLongitude, err2 := strconv.ParseFloat(longitude, 64)
-		if err1 != nil || err2 != nil  {
+		if err1 != nil || err2 != nil {
 			fmt.Println("Error:", err1)
 			return
 		}
@@ -94,7 +102,7 @@ var locationCmd = &cobra.Command{
 		t.AppendRows([]table.Row{{"Weather Summary", *forecastData.Next1Hours.Summary.SymbolCode, *forecastData.Next6Hours.Summary.SymbolCode, *forecastData.Next12Hours.Summary.SymbolCode}})
 		t.Render()
 
-		fmt.Printf("temperature at is %v degrees celcius right now\n",  utils.Float64Value(temperatureNow))
+		fmt.Printf("temperature at is %v degrees celcius right now\n", utils.Float64Value(temperatureNow))
 	},
 }
 

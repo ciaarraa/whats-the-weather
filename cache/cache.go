@@ -122,7 +122,7 @@ func (cache *Cache) Get(key string) (string, error) {
 
 func checkCacheFolder(cacheFolder string) {
 	if _, err := os.Stat(cacheFolder); errors.Is(err, os.ErrNotExist) {
-		err := os.Mkdir(cacheFolder, os.ModePerm)
+		err := os.MkdirAll(cacheFolder, os.ModePerm)
 		if err != nil {
 			fmt.Println("An error has occured: ", err)
 		}
