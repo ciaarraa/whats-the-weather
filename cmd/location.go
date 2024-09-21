@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
 	"github.com/ciaarraa/whats-the-weather/cache"
 	"github.com/ciaarraa/whats-the-weather/geocoder"
 
@@ -28,19 +29,21 @@ var locationCmd = &cobra.Command{
 	Long: ` A location to show the weather at. This will find the first possible match and will tell you the
 	temperature at that location. Example:
 	whats-the-weather location Dubai`,
-	Args: cobra.ExactArgs(1),
+	Args:             cobra.ExactArgs(1),
+	PersistentPreRun: toggleDebug,
 	Run: func(cmd *cobra.Command, args []string) {
 		yrClient := client.NewYrClient(http.DefaultClient, "whats-the-weather-local/0.0 ciaratully0@gmail.com ")
 		geoClient := geocoder.NewGeocoderClient(nil)
 		cahce_key := args[0]
 
 		homeDirname, err := os.UserHomeDir()
+		logger.Debugw("Fetched home directory.", "dir", homeDirname)
 		if err != nil {
 			fmt.Println(err)
 		}
 		cachedFilesFolder := homeDirname + "/.whats-the-weather/.cache"
 		dbFolder := homeDirname + "/.whats-the-weather/tmp/db"
-
+		logger.Debugw("Creating Cache module.", "dbFolder:", dbFolder, "cachedFilesFolder", cachedFilesFolder)
 		cache_db := cache.NewCache(dbFolder, cachedFilesFolder)
 
 		var longitude string
