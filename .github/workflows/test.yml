@@ -1,0 +1,32 @@
+name: Run Go Tests for All Modules
+
+on:
+  push:
+    branches:
+      - main
+      - '**'
+  pull_request:
+
+jobs:
+  test:
+    name: Run Go Tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        module: [cache, geocoder]
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v4
+      with:
+        go-version: '^1.22'
+
+    - name: Run Tests for ${{ matrix.module }}
+      working-directory: ${{ matrix.module }}
+      run: |
+        go mod tidy
+        go test ./...
